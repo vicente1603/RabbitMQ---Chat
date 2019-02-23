@@ -220,17 +220,11 @@ public class Chat {
       
       //Adicionando o emissor ao grupo
       channel.queueBind(emissor, grupo.trim(), "");
-    
-      //Consumer consumer = new DefaultConsumer(channel) {
-      
-        //public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {}};
         
-        //channel.basicPublish(grupo, "", null, mensagem.getBytes("UTF-8"));
-        
-        System.out.println("Grupo " + grupo + " criado com sucesso.");
-        System.out.println("");
+      System.out.println("Grupo " + grupo + " criado com sucesso.");
+      System.out.println("");
 
-        System.out.print(receptor + prompt);
+      System.out.print(receptor + prompt);
 
     }
 
