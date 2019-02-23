@@ -56,7 +56,7 @@ public class Chat {
         System.out.println("| !addGroup     <nomeGrupo>                 |  Criar um grupo                              |");
         System.out.println("| !removeGroup  <nomeGrupo>                 |  Apagar um grupo                             |");
         System.out.println("| !addUser      <nomeUsuario> <nomeGrupo>   |  Adicionar um usuário a um grupo específico  |");
-        System.out.println("| !delFromGroup <nomeUsuario> <nomeGrupo>   |  Remover um usuário de um grupo específico  |");
+        System.out.println("| !delFromGroup <nomeUsuario> <nomeGrupo>   |  Remover um usuário de um grupo específico   |");
         System.out.println("--------------------------------------------------------------------------------------------");
         System.out.println("");
         
