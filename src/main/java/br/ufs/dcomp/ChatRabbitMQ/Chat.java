@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.io.*;
 import com.google.protobuf.util.JsonFormat;
+import com.google.protobuf.ByteString;
 
 public class Chat {
 
@@ -44,6 +45,32 @@ public class Chat {
     while (true) {
 
       String mensagem = sc.nextLine();
+
+      byte[] b = mensagem.getBytes();
+
+      Date dataAtual = new Date(System.currentTimeMillis());  
+      SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy"); 
+      
+      Date horaAtual = new  Date(System.currentTimeMillis());
+      SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm");
+
+      MensagemProto.Conteudo.Builder builderConteudo = MensagemProto.Conteudo.newBuilder();
+      builderConteudo.setTipo("Qualquer tipo");
+      builderConteudo.setCorpo(ByteString.copyFrom(mensagem.getBytes()));
+      builderConteudo.setNome("Nome da Mensagem");
+
+      MensagemProto.Mensagem.Builder builderMensagem = MensagemProto.Mensagem.newBuilder();
+      builderMensagem.setEmissor(emissor);
+      builderMensagem.setData(formatoData.format(dataAtual));
+      builderMensagem.setHora(formatoHora.format(horaAtual));
+      builderMensagem.setGrupo(grupo);
+      builderMensagem.setConteudo(builderConteudo);
+
+      MensagemProto.Mensagem menssagemAEnviar = builderMensagem.build();
+
+      //System.out.println(menssagemAEnviar);
+
+      byte[] mensagemAEnviarBYTE = menssagemAEnviar.toByteArray();
       
       if (mensagem.startsWith("&")) {
 
@@ -105,8 +132,8 @@ public class Chat {
       }else if(!receptor.equals("")){
 
         System.out.print(receptor + prompt); 
-           
-        channel.basicPublish("",       receptor, null,  mensagem.getBytes("UTF-8"));
+        
+        channel.basicPublish("",       receptor, null,  mensagemAEnviarBYTE);
         channel.queueDeclare(receptor, false,   false,     false,       null);
 
       }else if(!grupo.equals("")){
@@ -115,7 +142,7 @@ public class Chat {
           
         try{
           
-          channel.basicPublish(grupo, "", null,  mensagem.getBytes("UTF-8"));
+          channel.basicPublish(grupo, "", null,  mensagemAEnviarBYTE);
 
         }catch(Exception e){
 
@@ -148,14 +175,9 @@ public class Chat {
           
       public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
       
-        Date data = new Date(System.currentTimeMillis());  
-        SimpleDateFormat formatoData = new SimpleDateFormat("(dd/MM/yyyy"); 
-        
-        Date hora = new  Date(System.currentTimeMillis());
-        SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm) ");
+        MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
+        System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + receptor + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
 
-        String mensagem = new String(body, "UTF-8");
-        System.out.println("\n"+formatoData.format(data) + " às "+ formatoHora.format(hora) + receptor +" diz: " + mensagem);
         System.out.print(receptor + prompt);
         
       }
@@ -182,14 +204,8 @@ public class Chat {
     
       public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         
-        Date data = new Date(System.currentTimeMillis());  
-        SimpleDateFormat formatoData = new SimpleDateFormat("(dd/MM/yyyy"); 
-      
-        Date hora = new  Date(System.currentTimeMillis());
-        SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm) ");
-          
-        String mensagem = new String(body, "UTF-8");
-        System.out.println("\n"+formatoData.format(data) + " às "+ formatoHora.format(hora) + receptor +" diz: " + mensagem);
+        MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
+        System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + receptor + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
         
         System.out.print("#" + grupo + prompt);
 
