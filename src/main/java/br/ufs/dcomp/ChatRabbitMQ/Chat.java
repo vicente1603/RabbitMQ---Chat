@@ -44,21 +44,24 @@ public class Chat {
 
     while (true) {
 
+      //Lendo o que foi digitado
       String mensagem = sc.nextLine();
 
-      byte[] b = mensagem.getBytes();
-
+      //Recuperando e formatando a data atual
       Date dataAtual = new Date(System.currentTimeMillis());  
       SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy"); 
       
+      //Recuperando e formatando a hora atual
       Date horaAtual = new  Date(System.currentTimeMillis());
       SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm");
 
+      //Montando o builder de Conteudo
       MensagemProto.Conteudo.Builder builderConteudo = MensagemProto.Conteudo.newBuilder();
       builderConteudo.setTipo("Qualquer tipo");
-      builderConteudo.setCorpo(ByteString.copyFrom(mensagem.getBytes()));
+      builderConteudo.setCorpo(ByteString.copyFrom(mensagem.getBytes())); //Transformando a String em um ByteString
       builderConteudo.setNome("Nome da Mensagem");
 
+      //Montando o builder de Mensagem
       MensagemProto.Mensagem.Builder builderMensagem = MensagemProto.Mensagem.newBuilder();
       builderMensagem.setEmissor(emissor);
       builderMensagem.setData(formatoData.format(dataAtual));
@@ -66,11 +69,11 @@ public class Chat {
       builderMensagem.setGrupo(grupo);
       builderMensagem.setConteudo(builderConteudo);
 
-      MensagemProto.Mensagem menssagemAEnviar = builderMensagem.build();
+      //Buildando a que será enviada no formato MensagemProto.Mensagem
+      MensagemProto.Mensagem mensagemEnvioMPM = builderMensagem.build();
 
-      //System.out.println(menssagemAEnviar);
-
-      byte[] mensagemAEnviarBYTE = menssagemAEnviar.toByteArray();
+      //Transformando de MensagemProto.Mensagem para um array de bytes
+      byte[] mensagemEnvioAB = mensagemEnvioMPM.toByteArray();
       
       if (mensagem.startsWith("&")) {
 
@@ -113,9 +116,9 @@ public class Chat {
 
         } else if (mensagem.startsWith("!addUser")) {
 
-          //Adicionado um usuário a um grupo
+          //Adicionando um usuário a um grupo
           adicionarUsuarioAGrupo(channel, mensagem);
-
+            
         } else if (mensagem.startsWith("!delFromGroup")) {
 
           //Removendo um usuário de um grupo
@@ -133,7 +136,8 @@ public class Chat {
 
         System.out.print(receptor + prompt); 
         
-        channel.basicPublish("",       receptor, null,  mensagemAEnviarBYTE);
+        //Recebendo as mensagens da fila do receptor
+        channel.basicPublish("",       receptor, null,  mensagemEnvioAB);
         channel.queueDeclare(receptor, false,   false,     false,       null);
 
       }else if(!grupo.equals("")){
@@ -142,12 +146,13 @@ public class Chat {
           
         try{
           
-          channel.basicPublish(grupo, "", null,  mensagemAEnviarBYTE);
+          //Recenbendo as mensagens do grupo
+          channel.basicPublish(grupo, "", null,  mensagemEnvioAB);
 
-        }catch(Exception e){
+        }catch (IOException ex) {
 
-          System.out.println(e);
-
+          System.out.println(ex);
+    
         }
 
       }else{
@@ -164,7 +169,7 @@ public class Chat {
 
   private static void mudarUsuarioReceptor(Channel channel, String mensagem) throws IOException {
 
-    //Mudando o layout do prompt para "nome>>"
+    //Mudando o layout do prompt para "nomeUsuario>>"
     receptor = mensagem;
     receptor = receptor.replace("@", "");
     System.out.println("As próximas mensagens serão enviadas para " + receptor + ".");
@@ -176,7 +181,8 @@ public class Chat {
       public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
       
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
-        System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + receptor + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+
+        System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
 
         System.out.print(receptor + prompt);
         
@@ -191,7 +197,7 @@ public class Chat {
 
   private static void mudarGrupoReceptor(Channel channel, String mensagem) throws IOException {
 
-    //Mudando o layout do prompt para "grupo>>"
+    //Mudando o layout do prompt para "#nomeGrupo>>"
     receptor = "";    
     grupo = mensagem;
     grupo = grupo.replace("#", "");
@@ -206,12 +212,14 @@ public class Chat {
         
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
         
-        if(!emissor.equals(mensagemRecebida.getEmissor()))
+        //Evitando que o próprio emissor receba a mensagem que enviar para um grupo
+        if(!emissor.equals(mensagemRecebida.getEmissor())){
+
+          System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+          System.out.print("#" + grupo + prompt);
         
-        System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
-        
-        System.out.print("#" + grupo + prompt);
-        
+        }
+
       }
 
     };
@@ -299,48 +307,6 @@ public class Chat {
     System.out.println(receptor + " foi removido do grupo " + grupo); 
 
     System.out.print(prompt);
-
-  }
-
-  
-  public void testeProtocolBuffer () throws IOException {
-    
-    //Tentando implementar o Protocol Buffer
-
-    MensagemProto.Conteudo.Builder builderConteudo = MensagemProto.Conteudo.newBuilder();
-    builderConteudo.setTipo("Qualquer tipo");
-   // builderConteudo.setCorpo(mensagem)
-    builderConteudo.setNome("Nome da Mensagem");
-    
-    MensagemProto.Mensagem.Builder builderMensagem = MensagemProto.Mensagem.newBuilder();
-    builderMensagem.setEmissor("emissor!!!");
-    builderMensagem.setData("data!!");
-    builderMensagem.setHora("hora!!");
-    builderMensagem.setGrupo("grupo!!");
-    builderMensagem.setConteudo(builderConteudo);
-    
-    MensagemProto.Mensagem contatoMensagem = builderMensagem.build();
-    
-    byte[] buffer = contatoMensagem.toByteArray();
-    
-    FileOutputStream fos = new FileOutputStream(new File("mensagem.bin"));
-    fos.write(buffer);
-    fos.close();
-    System.out.println("Contato escrito em formato binário no arquivo \"mensagem.bin\"");
-    
-    File file = new File("mensagem.bin");
-    FileInputStream fis = new FileInputStream(file);
-    buffer = new byte[(int) file.length()];
-    fis.read(buffer);
-    fis.close();
-    
-    contatoMensagem = MensagemProto.Mensagem.parseFrom(buffer);
-    
-    String emissor = contatoMensagem.getEmissor();
-    //String nome = contatoMensagem.getNome();
-   
-    System.out.println(emissor);
-   // System.out.println(nome); 
 
   }
 
