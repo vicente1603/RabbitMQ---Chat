@@ -20,6 +20,7 @@ public class Chat {
   private static String emissor;
   private static String receptor = "";
   private static String mensagem = "";
+  private static byte[] mensagemEnvioAB;
   private static String grupo = "";
 
   public static void main(String[] argv) throws Exception {
@@ -46,48 +47,24 @@ public class Chat {
 
       //Lendo o que foi digitado
       String mensagem = sc.nextLine();
+      String tipoMensagem = 'plain/text';
 
-      //Recuperando e formatando a data atual
-      Date dataAtual = new Date(System.currentTimeMillis());  
-      SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy"); 
-      
-      //Recuperando e formatando a hora atual
-      Date horaAtual = new  Date(System.currentTimeMillis());
-      SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm");
-
-      //Montando o builder de Conteudo
-      MensagemProto.Conteudo.Builder builderConteudo = MensagemProto.Conteudo.newBuilder();
-      builderConteudo.setTipo("Qualquer tipo");
-      builderConteudo.setCorpo(ByteString.copyFrom(mensagem.getBytes())); //Transformando a String em um ByteString
-      builderConteudo.setNome("Nome da Mensagem");
-
-      //Montando o builder de Mensagem
-      MensagemProto.Mensagem.Builder builderMensagem = MensagemProto.Mensagem.newBuilder();
-      builderMensagem.setEmissor(emissor);
-      builderMensagem.setData(formatoData.format(dataAtual));
-      builderMensagem.setHora(formatoHora.format(horaAtual));
-      builderMensagem.setGrupo(grupo);
-      builderMensagem.setConteudo(builderConteudo);
-
-      //Buildando a que será enviada no formato MensagemProto.Mensagem
-      MensagemProto.Mensagem mensagemEnvioMPM = builderMensagem.build();
-
-      //Transformando de MensagemProto.Mensagem para um array de bytes
-      byte[] mensagemEnvioAB = mensagemEnvioMPM.toByteArray();
+      montarMensagemEnvio(mensagem,tipoMensagem);
       
       if (mensagem.startsWith("&")) {
 
         System.out.println("");
-        System.out.println("--------------------------------------------------------------------------------------------");
-        System.out.println("|                  COMANDO                  |                  DESCRIÇÃO                   |");
-        System.out.println("--------------------------------------------------------------------------------------------");
-        System.out.println("| @nomeUsuario                              |  Mandar mensagem para um usuário específico  |");
-        System.out.println("| #nomeGrupo                                |  Mandar mensagem para um grupo específico    |");
-        System.out.println("| !addGroup     <nomeGrupo>                 |  Criar um grupo                              |");
-        System.out.println("| !removeGroup  <nomeGrupo>                 |  Apagar um grupo                             |");
-        System.out.println("| !addUser      <nomeUsuario> <nomeGrupo>   |  Adicionar um usuário a um grupo específico  |");
-        System.out.println("| !delFromGroup <nomeUsuario> <nomeGrupo>   |  Remover um usuário de um grupo específico   |");
-        System.out.println("--------------------------------------------------------------------------------------------");
+        System.out.println("----------------------------------------------------------------------------------------------------");
+        System.out.println("|                  COMANDO                          |                  DESCRIÇÃO                   |");
+        System.out.println("----------------------------------------------------------------------------------------------------");
+        System.out.println("| @nomeUsuario                                      |  Mandar mensagem para um usuário específico  |");
+        System.out.println("| #nomeGrupo                                        |  Mandar mensagem para um grupo específico    |");
+        System.out.println("| !addGroup     <nome-do-grupo>                     |  Criar um grupo                              |");
+        System.out.println("| !removeGroup  <nome-do-grupo>                     |  Apagar um grupo                             |");
+        System.out.println("| !addUser      <nome-do-usuario> <nome-do-grupo>   |  Adicionar um usuário a um grupo específico  |");
+        System.out.println("| !delFromGroup <nome-do-usuario> <nome-do-grupo>   |  Remover um usuário de um grupo específico   |");
+        System.out.println("| !upload       <caminho-do-arquivo>                |  Fazer upload de um arquivo                  |");
+        System.out.println("----------------------------------------------------------------------------------------------------");
         System.out.println("");
         
         System.out.print(receptor + prompt);
@@ -123,6 +100,11 @@ public class Chat {
 
           //Removendo um usuário de um grupo
           removerUsuarioDeGrupo(channel, mensagem);
+
+        } else if (mensagem.startsWith("!upload")) {
+
+          //Fazendo um upload de arquivo
+          //uploadAquivo(channel, mensagem);
 
         } else {
 
@@ -215,7 +197,7 @@ public class Chat {
         //Evitando que o próprio emissor receba a mensagem que enviar para um grupo
         if(!emissor.equals(mensagemRecebida.getEmissor())){
 
-          System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+          System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + "#" + grupo + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
           System.out.print("#" + grupo + prompt);
         
         }
@@ -309,5 +291,38 @@ public class Chat {
     System.out.print(prompt);
 
   }
+
+  private static void montarMensagemEnvio(String mensagem, String tipoMensagem){
+
+    //Recuperando e formatando a data atual
+    Date dataAtual = new Date(System.currentTimeMillis());  
+    SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy"); 
+    
+    //Recuperando e formatando a hora atual
+    Date horaAtual = new  Date(System.currentTimeMillis());
+    SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm");
+
+    //Montando o builder de Conteudo
+    MensagemProto.Conteudo.Builder builderConteudo = MensagemProto.Conteudo.newBuilder();
+    builderConteudo.setTipo(tipoMensagem);
+    builderConteudo.setCorpo(ByteString.copyFrom(mensagem.getBytes())); //Transformando a String em um ByteString
+    builderConteudo.setNome("Nome da Mensagem");
+
+    //Montando o builder de Mensagem
+    MensagemProto.Mensagem.Builder builderMensagem = MensagemProto.Mensagem.newBuilder();
+    builderMensagem.setEmissor(emissor);
+    builderMensagem.setData(formatoData.format(dataAtual));
+    builderMensagem.setHora(formatoHora.format(horaAtual));
+    builderMensagem.setGrupo(grupo);
+    builderMensagem.setConteudo(builderConteudo);
+
+    //Buildando a mensamgem que será enviada no formato MensagemProto.Mensagem
+    MensagemProto.Mensagem mensagemEnvioMPM = builderMensagem.build();
+
+    //Transformando de MensagemProto.Mensagem para um array de bytes que será usado no método basicPublish
+    mensagemEnvioAB = mensagemEnvioMPM.toByteArray();
+
+  }
+
 
 }
