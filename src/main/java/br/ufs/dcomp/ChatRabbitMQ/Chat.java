@@ -205,10 +205,13 @@ public class Chat {
       public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
-        System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + receptor + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+        
+        if(!emissor.equals(mensagemRecebida.getEmissor()))
+        
+        System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
         
         System.out.print("#" + grupo + prompt);
-
+        
       }
 
     };
@@ -220,8 +223,6 @@ public class Chat {
 
   private static void criarGrupo(Channel channel, String mensagem) throws IOException {
     
-    System.out.println("Entrou aqui");
-
     String texto[] = mensagem.split(" ");    
     grupo = texto[1];
     
