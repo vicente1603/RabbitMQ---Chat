@@ -13,6 +13,11 @@ import java.util.Calendar;
 import java.io.*;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.ByteString;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.net.URLConnection;
 
 public class Chat {
 
@@ -47,7 +52,7 @@ public class Chat {
 
       //Lendo o que foi digitado
       String mensagem = sc.nextLine();
-      String tipoMensagem = 'plain/text';
+      String tipoMensagem = "texto simples";
 
       montarMensagemEnvio(mensagem,tipoMensagem);
       
@@ -104,7 +109,8 @@ public class Chat {
         } else if (mensagem.startsWith("!upload")) {
 
           //Fazendo um upload de arquivo
-          //uploadAquivo(channel, mensagem);
+          tipoMensagem = "arquivo";
+          montarMensagemEnvio(mensagem,tipoMensagem);
 
         } else {
 
@@ -145,6 +151,14 @@ public class Chat {
 
       }
 
+      if (mensagem.startsWith("!upload")) {
+
+        //Recebendo as mensagens da fila do receptor
+        channel.basicPublish("",       receptor, null,  mensagemEnvioAB);
+        channel.queueDeclare(receptor, false,   false,     false,       null);
+
+      }
+
     }
 
   }
@@ -164,9 +178,33 @@ public class Chat {
       
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
 
-        System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+        if(mensagemRecebida.getConteudo().getTipo() == ""){
 
-        System.out.print(receptor + prompt);
+          System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+
+        }else{
+
+          try {
+
+            ByteString mensagemRecebidaBS = mensagemRecebida.getConteudo().getCorpo();
+            byte[] mensagemRecebidaAB = mensagemRecebidaBS.toByteArray();
+
+            String fileDest = "/Users/LucasCruz/Documents/teste.txt";
+
+            Path path = Paths.get(fileDest);
+            Files.write(path, mensagemRecebidaAB);
+
+            System.out.println("O arquivo " + "teste.txt" + " foi baixado no caminho " + fileDest);
+
+          } catch (IOException e) {
+
+            e.printStackTrace();
+
+          }
+
+        }
+
+        System.out.println(receptor + prompt);
         
       }
 
@@ -292,8 +330,48 @@ public class Chat {
 
   }
 
-  private static void montarMensagemEnvio(String mensagem, String tipoMensagem){
+  private static void montarMensagemEnvio(String mensagem, String tipoMensagem) throws IOException{
 
+    ByteString mensagemEmByteString = null;
+    String tipoMime = "";
+
+    if (tipoMensagem == "arquivo"){
+
+      String caminho = mensagem.replace("!upload ", "");
+      Path path = Paths.get(caminho);
+  
+      if (path.toFile().exists()) {
+
+        File file = new File(caminho);
+
+        tipoMime = URLConnection.guessContentTypeFromName(file.getName());
+
+        System.out.println(tipoMime);
+
+        byte[] arquivoBA = new byte[(int) file.length()]; 
+
+        FileInputStream fis = new FileInputStream(file);
+        fis.read(arquivoBA);
+        fis.close();
+
+        ByteString arquivoBS = ByteString.copyFrom(arquivoBA);
+
+        mensagemEmByteString = arquivoBS;
+
+        System.out.println(mensagemEmByteString);
+      
+      } else {
+
+        System.out.println("Arquivo não existe!");
+
+      }
+
+    }else{
+
+      mensagemEmByteString = ByteString.copyFrom(mensagem.getBytes()); //Transformando a String em um ByteString
+
+    }
+    
     //Recuperando e formatando a data atual
     Date dataAtual = new Date(System.currentTimeMillis());  
     SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy"); 
@@ -304,8 +382,8 @@ public class Chat {
 
     //Montando o builder de Conteudo
     MensagemProto.Conteudo.Builder builderConteudo = MensagemProto.Conteudo.newBuilder();
-    builderConteudo.setTipo(tipoMensagem);
-    builderConteudo.setCorpo(ByteString.copyFrom(mensagem.getBytes())); //Transformando a String em um ByteString
+    builderConteudo.setTipo(tipoMime);
+    builderConteudo.setCorpo(mensagemEmByteString); 
     builderConteudo.setNome("Nome da Mensagem");
 
     //Montando o builder de Mensagem
@@ -316,13 +394,12 @@ public class Chat {
     builderMensagem.setGrupo(grupo);
     builderMensagem.setConteudo(builderConteudo);
 
-    //Buildando a mensamgem que será enviada no formato MensagemProto.Mensagem
+    //Buildando a mensagem que será enviada no formato MensagemProto.Mensagem
     MensagemProto.Mensagem mensagemEnvioMPM = builderMensagem.build();
 
     //Transformando de MensagemProto.Mensagem para um array de bytes que será usado no método basicPublish
     mensagemEnvioAB = mensagemEnvioMPM.toByteArray();
-
+    
   }
-
 
 }
