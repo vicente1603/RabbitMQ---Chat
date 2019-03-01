@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.net.URLConnection;
+import java.util.HashMap;
 
 public class Chat {
 
@@ -29,6 +30,12 @@ public class Chat {
   private static String grupo = "";
 
   public static void main(String[] argv) throws Exception {
+
+    HashMap<String, String> extensoes = new HashMap<String, String>();
+    extensoes.put("application/octet-stream", ".bin");
+    extensoes.put("application/pdf", ".pdf");
+    extensoes.put("text/plain", ".txt");
+    extensoes.put("application/xml", ".xml");
 
     //Criando a conexão
     ConnectionFactory factory = new ConnectionFactory();
@@ -43,6 +50,9 @@ public class Chat {
 
     //Criando a fila do usuário emissor
     channel.queueDeclare(emissor, false,   false,     false,       null);
+
+    //Criando a fila de arquivos do usuário emissor
+    channel.queueDeclare("@" + emissor, false,   false,     false,       null);
     
     //Começando o prompt de mensagens
     System.out.println("");
@@ -77,7 +87,7 @@ public class Chat {
       }else if (mensagem.startsWith("@")) {
 
         //Mudando o receptor para um usuário específico
-        mudarUsuarioReceptor(channel, mensagem);
+        mudarUsuarioReceptor(channel, mensagem, extensoes);
 
       } else if (mensagem.startsWith("#")) {
 
@@ -154,8 +164,8 @@ public class Chat {
       if (mensagem.startsWith("!upload")) {
 
         //Recebendo as mensagens da fila do receptor
-        channel.basicPublish("",       receptor, null,  mensagemEnvioAB);
-        channel.queueDeclare(receptor, false,   false,     false,       null);
+        channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
+        channel.queueDeclare("@" + receptor, false,   false,     false,       null);
 
       }
 
@@ -163,7 +173,7 @@ public class Chat {
 
   }
 
-  private static void mudarUsuarioReceptor(Channel channel, String mensagem) throws IOException {
+  private static void mudarUsuarioReceptor(Channel channel, String mensagem, HashMap extensoes) throws IOException {
 
     //Mudando o layout do prompt para "nomeUsuario>>"
     receptor = mensagem;
@@ -189,12 +199,12 @@ public class Chat {
             ByteString mensagemRecebidaBS = mensagemRecebida.getConteudo().getCorpo();
             byte[] mensagemRecebidaAB = mensagemRecebidaBS.toByteArray();
 
-            String fileDest = "/Users/LucasCruz/Documents/teste.txt";
+            String fileDest = mensagemRecebida.getConteudo().getNome(); 
 
             Path path = Paths.get(fileDest);
             Files.write(path, mensagemRecebidaAB);
 
-            System.out.println("O arquivo " + "teste.txt" + " foi baixado no caminho " + fileDest);
+            System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
 
           } catch (IOException e) {
 
@@ -212,6 +222,9 @@ public class Chat {
 
     //Consumindo a fila do emissor    
     channel.basicConsume(emissor, true, consumer); 
+
+    //Consumindo a fila de arquivos do emissor    
+    channel.basicConsume("@" + emissor, true, consumer); 
 
   }
 
@@ -334,6 +347,7 @@ public class Chat {
 
     ByteString mensagemEmByteString = null;
     String tipoMime = "";
+    String nome = "";
 
     if (tipoMensagem == "arquivo"){
 
@@ -346,8 +360,6 @@ public class Chat {
 
         tipoMime = URLConnection.guessContentTypeFromName(file.getName());
 
-        System.out.println(tipoMime);
-
         byte[] arquivoBA = new byte[(int) file.length()]; 
 
         FileInputStream fis = new FileInputStream(file);
@@ -358,7 +370,9 @@ public class Chat {
 
         mensagemEmByteString = arquivoBS;
 
-        System.out.println(mensagemEmByteString);
+        nome = file.getName();
+
+        System.out.println("Arquivo enviado com sucesso!");
       
       } else {
 
@@ -384,7 +398,7 @@ public class Chat {
     MensagemProto.Conteudo.Builder builderConteudo = MensagemProto.Conteudo.newBuilder();
     builderConteudo.setTipo(tipoMime);
     builderConteudo.setCorpo(mensagemEmByteString); 
-    builderConteudo.setNome("Nome da Mensagem");
+    builderConteudo.setNome(nome);
 
     //Montando o builder de Mensagem
     MensagemProto.Mensagem.Builder builderMensagem = MensagemProto.Mensagem.newBuilder();
