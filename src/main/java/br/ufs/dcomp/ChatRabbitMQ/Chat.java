@@ -134,7 +134,7 @@ public class Chat {
 
         System.out.print(receptor + prompt); 
         
-        //Recebendo as mensagens da fila do receptor
+        //Enviando as mensagens na fila do receptor
         channel.basicPublish("",       receptor, null,  mensagemEnvioAB);
         channel.queueDeclare(receptor, false,   false,     false,       null);
 
@@ -144,7 +144,7 @@ public class Chat {
           
         try{
           
-          //Recenbendo as mensagens do grupo
+          //Enviando as mensagens do grupo
           channel.basicPublish(grupo, "", null,  mensagemEnvioAB);
 
         }catch (IOException ex) {
@@ -163,9 +163,14 @@ public class Chat {
 
       if (mensagem.startsWith("!upload")) {
 
-        //Recebendo as mensagens da fila do receptor
+        //Envindo as mensagens da fila do receptor
         channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
         channel.queueDeclare("@" + receptor, false,   false,     false,       null);
+
+        if(!grupo.equals("")){
+          //Envindo os arquivos do grupo
+          channel.basicPublish("@" + grupo, "", null,  mensagemEnvioAB);
+        }
 
       }
 
@@ -244,13 +249,31 @@ public class Chat {
       public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
-        
-        //Evitando que o próprio emissor receba a mensagem que enviar para um grupo
-        if(!emissor.equals(mensagemRecebida.getEmissor())){
+
+        if(mensagemRecebida.getConteudo().getTipo() == ""){
 
           System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + "#" + grupo + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
-          System.out.print("#" + grupo + prompt);
-        
+
+        }else{
+
+          try {
+
+            ByteString mensagemRecebidaBS = mensagemRecebida.getConteudo().getCorpo();
+            byte[] mensagemRecebidaAB = mensagemRecebidaBS.toByteArray();
+
+            String fileDest = mensagemRecebida.getConteudo().getNome(); 
+
+            Path path = Paths.get(fileDest);
+            Files.write(path, mensagemRecebidaAB);
+
+            System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
+
+          } catch (IOException e) {
+
+            e.printStackTrace();
+
+          }
+
         }
 
       }
@@ -259,6 +282,9 @@ public class Chat {
 
     //Consumindo a fila do emissor    
     channel.basicConsume(emissor, true, consumer); 
+
+    //Consumindo a fila de arquivos do emissor    
+    channel.basicConsume("@" + emissor, true, consumer); 
 
   }
 
@@ -275,9 +301,15 @@ public class Chat {
       
       //Criando o grupo
       channel.exchangeDeclare(grupo.trim(), "fanout");
+
+      //Criando o grupo
+      channel.exchangeDeclare("@" + grupo.trim(), "fanout");
       
       //Adicionando o emissor ao grupo
       channel.queueBind(emissor, grupo.trim(), "");
+
+      //Adicionando o emissor ao grupo
+      channel.queueBind("@" + emissor, "@" + grupo.trim(), "");
         
       System.out.println("Grupo " + grupo + " criado com sucesso.");
       System.out.println("");
@@ -301,6 +333,9 @@ public class Chat {
       
       //Removendo o grupo
       channel.exchangeDelete(grupo.trim());
+
+      //Removendo o grupo
+      channel.exchangeDelete("@" + grupo.trim());
     
       System.out.println("Grupo " + grupo.trim() + " removido com sucesso.");
       System.out.println("");
@@ -320,6 +355,9 @@ public class Chat {
     
     //Adicionando o usuário ao grupo
     channel.queueBind(receptor, grupo, "");
+
+    //Adicionando o usuário ao grupo
+    channel.queueBind("@" + receptor, "@" + grupo, "");
     
     System.out.println(receptor + " foi adicionado ao grupo " + grupo);
 
@@ -336,6 +374,9 @@ public class Chat {
     
     //Removendo o usuário do grupo
     channel.queueUnbind(receptor, grupo, "");
+
+    //Removendo o usuário do grupo
+    channel.queueUnbind("@" + receptor, "@" + grupo, "");
     
     System.out.println(receptor + " foi removido do grupo " + grupo); 
 
