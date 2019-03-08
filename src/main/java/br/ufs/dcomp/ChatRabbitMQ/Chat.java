@@ -30,6 +30,7 @@ public class Chat {
   private static String grupo = "";
 
   public static void main(String[] argv) throws Exception {
+    
 
     HashMap<String, String> extensoes = new HashMap<String, String>();
     extensoes.put("application/octet-stream", ".bin");
@@ -387,6 +388,34 @@ public class Chat {
     System.out.print(prompt);
 
   }
+  
+  
+  private static void metodo1(){
+    System.out.println("** Thead que inicia o metodo de mensagem para o contato ou grupo **");
+    System.out.print(receptor + prompt);
+
+    }
+    
+  
+  /*private static void montarThread(String mensagem) throws IOException{
+    
+    
+    Runnable t1 = () -> {
+      metodo1();
+    };
+    
+    Runnable t2 = () -> {
+      metodo2();
+    };
+    
+    Thread thread1 = new Thread(t1);
+    Thread thread2 = new Thread(t2);
+    
+    thread1.start();
+    thread2.start();
+    
+    
+  }*/
 
   private static void montarMensagemEnvio(String mensagem, String tipoMensagem) throws IOException{
 
@@ -419,9 +448,13 @@ public class Chat {
 
         System.out.println("Enviando " +file.getName()+ " para " + receptor);
         
-        System.out.print(receptor + prompt);
-
-    
+        Runnable t1 = () -> {
+          metodo1();
+        };
+        
+        Thread thread1 = new Thread(t1);
+        
+        thread1.start();
       
       } else {
 
