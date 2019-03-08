@@ -210,6 +210,8 @@ public class Chat {
             Files.write(path, mensagemRecebidaAB);
 
             System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
+            
+            //colocar aqui a resposta do envio do arquivo
 
           } catch (IOException e) {
 
@@ -219,7 +221,7 @@ public class Chat {
 
         }
 
-        System.out.println(receptor + prompt);
+        System.out.print(receptor + prompt);
         
       }
 
@@ -267,6 +269,8 @@ public class Chat {
             Files.write(path, mensagemRecebidaAB);
 
             System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
+            
+            //colocar aqui a resposta do envio do arquivo
 
           } catch (IOException e) {
 
@@ -413,7 +417,11 @@ public class Chat {
 
         nome = file.getName();
 
-        System.out.println("Arquivo enviado com sucesso!");
+        System.out.println("Enviando " +file.getName()+ " para " + receptor);
+        
+        System.out.print(receptor + prompt);
+
+    
       
       } else {
 
