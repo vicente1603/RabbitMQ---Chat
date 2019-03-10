@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.net.URLConnection;
 import java.util.HashMap;
+import br.ufs.dcomp.ChatRabbitMQ.*;
 
 public class Chat {
 
@@ -28,22 +29,24 @@ public class Chat {
   private static String mensagem = "";
   private static byte[] mensagemEnvioAB;
   private static String grupo = "";
+  static int i = 0;
 
   public static void main(String[] argv) throws Exception {
-    
 
-    HashMap<String, String> extensoes = new HashMap<String, String>();
-    extensoes.put("application/octet-stream", ".bin");
-    extensoes.put("application/pdf", ".pdf");
-    extensoes.put("text/plain", ".txt");
-    extensoes.put("application/xml", ".xml");
+    /*
+    System.out.println("main() started");
+    Thread thread = new Thread(new PrintingRunnable(1));
+    thread.start();
+    thread.join();
+    System.out.println("main() finished");
+    */
 
     //Criando a conexão
     ConnectionFactory factory = new ConnectionFactory();
     factory.setUri("amqp://adclapft:3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3@toad.rmq.cloudamqp.com/adclapft"); // cloudamqp
     Connection connection = factory.newConnection();
     Channel channel = connection.createChannel();
-
+    
     //Obtendo a primeira entrada do usuário
     System.out.println("Usuário: ");
     Scanner sc = new Scanner(System.in);
@@ -88,7 +91,7 @@ public class Chat {
       }else if (mensagem.startsWith("@")) {
 
         //Mudando o receptor para um usuário específico
-        mudarUsuarioReceptor(channel, mensagem, extensoes);
+        mudarUsuarioReceptor(channel, mensagem);
 
       } else if (mensagem.startsWith("#")) {
 
@@ -162,11 +165,16 @@ public class Chat {
 
       }
 
+      //System.out.println(mensagem);
+
       if (mensagem.startsWith("!upload")) {
 
         //Envindo as mensagens da fila do receptor
-        channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
-        channel.queueDeclare("@" + receptor, false,   false,     false,       null);
+        //channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
+        //channel.queueDeclare("@" + receptor, false,   false,     false,       null);
+        
+        Thread thread = new Thread(new UploadArquivo(channel, mensagemEnvioAB, receptor));
+        thread.start();
 
         if(!grupo.equals("")){
           //Envindo os arquivos do grupo
@@ -179,7 +187,7 @@ public class Chat {
 
   }
 
-  private static void mudarUsuarioReceptor(Channel channel, String mensagem, HashMap extensoes) throws IOException {
+  private static void mudarUsuarioReceptor(Channel channel, String mensagem) throws IOException {
 
     //Mudando o layout do prompt para "nomeUsuario>>"
     receptor = mensagem;
@@ -211,8 +219,6 @@ public class Chat {
             Files.write(path, mensagemRecebidaAB);
 
             System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
-            
-            //colocar aqui a resposta do envio do arquivo
 
           } catch (IOException e) {
 
@@ -222,7 +228,7 @@ public class Chat {
 
         }
 
-        System.out.print(receptor + prompt);
+        System.out.println(receptor + prompt);
         
       }
 
@@ -270,8 +276,6 @@ public class Chat {
             Files.write(path, mensagemRecebidaAB);
 
             System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
-            
-            //colocar aqui a resposta do envio do arquivo
 
           } catch (IOException e) {
 
@@ -388,34 +392,6 @@ public class Chat {
     System.out.print(prompt);
 
   }
-  
-  
-  private static void metodo1(){
-    System.out.println("** Thead que inicia o metodo de mensagem para o contato ou grupo **");
-    System.out.print(receptor + prompt);
-
-    }
-    
-  
-  /*private static void montarThread(String mensagem) throws IOException{
-    
-    
-    Runnable t1 = () -> {
-      metodo1();
-    };
-    
-    Runnable t2 = () -> {
-      metodo2();
-    };
-    
-    Thread thread1 = new Thread(t1);
-    Thread thread2 = new Thread(t2);
-    
-    thread1.start();
-    thread2.start();
-    
-    
-  }*/
 
   private static void montarMensagemEnvio(String mensagem, String tipoMensagem) throws IOException{
 
@@ -446,15 +422,7 @@ public class Chat {
 
         nome = file.getName();
 
-        System.out.println("Enviando " +file.getName()+ " para " + receptor);
-        
-        Runnable t1 = () -> {
-          metodo1();
-        };
-        
-        Thread thread1 = new Thread(t1);
-        
-        thread1.start();
+        System.out.println("Arquivo enviado com sucesso!");
       
       } else {
 
@@ -496,6 +464,34 @@ public class Chat {
     //Transformando de MensagemProto.Mensagem para um array de bytes que será usado no método basicPublish
     mensagemEnvioAB = mensagemEnvioMPM.toByteArray();
     
+  }
+
+}
+
+class UploadArquivo implements Runnable {
+
+  private final Channel channel;
+  private final byte[] mensagemEnvioAB;
+  private final String receptor;
+
+  public UploadArquivo(Channel channel, byte[] mensagemEnvioAB, String receptor) {
+      this.channel = channel;
+      this.mensagemEnvioAB = mensagemEnvioAB;
+      this.receptor = receptor;
+  }
+
+  @Override
+  // This function will be executed in parallel
+  public void run() {
+      try {
+
+          //Envindo as mensagens da fila do receptor
+          channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
+          channel.queueDeclare("@" + receptor, false,   false,     false,       null);
+          
+      } catch (Exception ex) {
+          System.out.println("Thread was interrupted");
+      }
   }
 
 }
