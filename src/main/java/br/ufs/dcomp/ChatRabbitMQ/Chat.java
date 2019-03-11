@@ -23,6 +23,8 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.json.*;
+
 
 public class Chat {
 
@@ -364,8 +366,38 @@ public class Chat {
            
             if (resposta.getStatus() == 200) {
             
-            	String json = resposta.readEntity(String.class);
-            	System.out.println(json);
+            	String jsonData = resposta.readEntity(String.class);
+            	jsonData = "{\"bindings\": [" +
+                                  "{\"ircEvent\":"
+                                + jsonData
+                                + "}"
+                                + "]"
+                                + "}";
+                                
+            try {
+
+            JSONObject jObj = new JSONObject( jsonData );
+
+            JSONArray jArray = jObj.getJSONArray( "bindings" );
+
+            for ( int i = 0; i < jArray.length(); i++ ) {
+
+            JSONObject jo = jArray.getJSONObject( i );
+
+            JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
+
+            for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
+
+            JSONObject joi = jArrayIrcEvent.getJSONObject( j );
+
+            if ( joi.has( "destination" ) ) {
+                System.out.println( joi.getString( "destination" ) );
+            } 
+            }
+            }
+            } catch ( JSONException exc ) {
+            exc.printStackTrace();
+            }
             	
             	System.out.print(prompt);
             
@@ -380,8 +412,6 @@ public class Chat {
     private static void listarGruposUsuarios() throws IOException{
     
     try {
-                System.out.println(emissor);
-            
             String username = "adclapft";
             String password = "3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3";
      
@@ -400,8 +430,38 @@ public class Chat {
            
             if (resposta.getStatus() == 200) {
             
-            	String json = resposta.readEntity(String.class);
-            	System.out.println(json);
+            	String jsonData = resposta.readEntity(String.class);
+            	jsonData = "{\"bindings\": [" +
+                                  "{\"ircEvent\":"
+                                + jsonData
+                                + "}"
+                                + "]"
+                                + "}";
+                                
+                                try {
+
+            JSONObject jObj = new JSONObject( jsonData );
+
+            JSONArray jArray = jObj.getJSONArray( "bindings" );
+
+            for ( int i = 0; i < jArray.length(); i++ ) {
+
+            JSONObject jo = jArray.getJSONObject( i );
+
+            JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
+
+            for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
+
+            JSONObject joi = jArrayIrcEvent.getJSONObject( j );
+
+            if ( joi.has( "source" ) ) {
+                System.out.println( joi.getString( "source" ) );
+            } 
+            }
+            }
+            } catch ( JSONException exc ) {
+            exc.printStackTrace();
+            }
             	
             	System.out.print(prompt);
             
