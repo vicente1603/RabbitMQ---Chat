@@ -343,137 +343,157 @@ public class Chat {
     }
 
   }
-  
+
   private static void listarUsuariosGrupo(Channel channel, String mensagem) throws IOException{
     
     try {
       
-            String texto[] = mensagem.split(" ");    
-            grupo = texto[1];
-            
-            String username = "adclapft";
-            String password = "3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3";
-     
-            String usernameAndPassword = username + ":" + password;
-            String authorizationHeaderName = "Authorization";
-            String authorizationHeaderValue = "Basic " + java.util.Base64.getEncoder().encodeToString( usernameAndPassword.getBytes() );
-     
-            // Perform a request
-            String restResource = "https://toad.rmq.cloudamqp.com";
-            Client client = ClientBuilder.newClient();
-            Response resposta = client.target( restResource )
-            	.path("/api/exchanges/adclapft/"+grupo+"/bindings/source") // lista todos os binds que tem "ufs" como source	
-            	.request(MediaType.APPLICATION_JSON)
-                .header( authorizationHeaderName, authorizationHeaderValue ) // The basic authentication header goes here
-                .get();     // Perform a post with the form values
-           
-            if (resposta.getStatus() == 200) {
-            
-            	String jsonData = resposta.readEntity(String.class);
-            	jsonData = "{\"bindings\": [" +
-                                  "{\"ircEvent\":"
-                                + jsonData
-                                + "}"
-                                + "]"
-                                + "}";
-                                
-            try {
-
-            JSONObject jObj = new JSONObject( jsonData );
-
-            JSONArray jArray = jObj.getJSONArray( "bindings" );
-
-            for ( int i = 0; i < jArray.length(); i++ ) {
-
-            JSONObject jo = jArray.getJSONObject( i );
-
-            JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
-
-            for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
-
-            JSONObject joi = jArrayIrcEvent.getJSONObject( j );
-
-            if ( joi.has( "destination" ) ) {
-                System.out.println( joi.getString( "destination" ) );
-            } 
-            }
-            }
-            } catch ( JSONException exc ) {
-            exc.printStackTrace();
-            }
-            	
-            	System.out.print(prompt);
-            
-            }    
+      String nomeServico = "listarUsuariosGrupo";
+      String dadoARecuperar = "usuariosGrupo";
+      
+      Response resposta = recuperarJson(mensagem,nomeServico);
+   
+      if (resposta.getStatus() == 200) {
+      
+        extrairEListarDadosJson(formatarJson(resposta),dadoARecuperar);
+        System.out.print("\n" + prompt);
+      
+      }    
             
 		} catch (Exception e) {
-			e.printStackTrace();
+
+      e.printStackTrace();
+      
 		}
     
   }
   
-    private static void listarGruposUsuarios() throws IOException{
+  private static void listarGruposUsuarios() throws IOException{
     
     try {
-            String username = "adclapft";
-            String password = "3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3";
-     
-            String usernameAndPassword = username + ":" + password;
-            String authorizationHeaderName = "Authorization";
-            String authorizationHeaderValue = "Basic " + java.util.Base64.getEncoder().encodeToString( usernameAndPassword.getBytes() );
-     
-            // Perform a request
-            String restResource = "https://toad.rmq.cloudamqp.com";
-            Client client = ClientBuilder.newClient();
-            Response resposta = client.target( restResource )
-            	.path("/api/queues/adclapft/"+emissor+"/bindings")
-            	.request(MediaType.APPLICATION_JSON)
-                .header( authorizationHeaderName, authorizationHeaderValue ) // The basic authentication header goes here
-                .get();     // Perform a post with the form values
-           
-            if (resposta.getStatus() == 200) {
-            
-            	String jsonData = resposta.readEntity(String.class);
-            	jsonData = "{\"bindings\": [" +
-                                  "{\"ircEvent\":"
-                                + jsonData
-                                + "}"
-                                + "]"
-                                + "}";
-                                
-                                try {
 
-            JSONObject jObj = new JSONObject( jsonData );
-
-            JSONArray jArray = jObj.getJSONArray( "bindings" );
-
-            for ( int i = 0; i < jArray.length(); i++ ) {
-
-            JSONObject jo = jArray.getJSONObject( i );
-
-            JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
-
-            for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
-
-            JSONObject joi = jArrayIrcEvent.getJSONObject( j );
-
-            if ( joi.has( "source" ) ) {
-                System.out.println( joi.getString( "source" ) );
-            } 
-            }
-            }
-            } catch ( JSONException exc ) {
-            exc.printStackTrace();
-            }
-            	
-            	System.out.print(prompt);
-            
-            }    
+      String nomeServico = "listarGruposUsuarios";
+      String dadoARecuperar = "grupos";
+      
+      Response resposta = recuperarJson(mensagem,nomeServico);
+      
+      if (resposta.getStatus() == 200) {
+      
+        extrairEListarDadosJson(formatarJson(resposta),dadoARecuperar);
+        System.out.print("\n" + prompt);
+      
+      }    
             
 		} catch (Exception e) {
-			e.printStackTrace();
+
+      e.printStackTrace();
+      
 		}
     
+  }
+  
+  private static Response recuperarJson(String mensagem, String nomeServico){
+
+    String caminhoServico = "";
+    Response resposta = null;
+
+    if(nomeServico == "listarUsuariosGrupo"){
+
+      String texto[] = mensagem.split(" ");    
+      grupo = texto[1];
+      caminhoServico = "/api/exchanges/adclapft/" + grupo + "/bindings/source";
+
+    }else if (nomeServico == "listarGruposUsuarios"){
+
+      caminhoServico = "/api/queues/adclapft/" + emissor + "/bindings";
+
+    }
+
+    //Preparando os dados para a requisição
+    String username = "adclapft";
+    String password = "3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3";
+    String usernameAndPassword = username + ":" + password;
+    String authorizationHeaderName = "Authorization";
+    String authorizationHeaderValue = "Basic " + java.util.Base64.getEncoder().encodeToString( usernameAndPassword.getBytes() );
+
+    if(caminhoServico != ""){
+
+      //Realizando a requisição
+      String restResource = "https://toad.rmq.cloudamqp.com";
+      Client client = ClientBuilder.newClient();
+      resposta = client.target( restResource )
+        .path(caminhoServico) // a requisição depende do caminho do serviço
+        .request(MediaType.APPLICATION_JSON)
+          .header( authorizationHeaderName, authorizationHeaderValue ) 
+          .get();    
+
+    }
+
+    return resposta;
+
+  }
+
+  private static String formatarJson(Response resposta){
+
+    String jsonData = resposta.readEntity(String.class);
+        
+    jsonData =  "{\"bindings\": "+ 
+                  "[" +
+                    "{\"ircEvent\":"
+                      + jsonData
+                    + "}"
+                  + "]"
+                + "}";
+    
+    return jsonData;
+
+  }
+
+  private static void extrairEListarDadosJson(String jsonData, String dadoARecuperar){
+
+    try {
+
+      JSONObject jObj = new JSONObject( jsonData );
+      JSONArray jArray = jObj.getJSONArray( "bindings" );
+
+      for ( int i = 0; i < jArray.length(); i++ ) {
+
+        JSONObject jo = jArray.getJSONObject( i );
+        JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
+
+        for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
+
+          JSONObject joi = jArrayIrcEvent.getJSONObject( j );
+
+          if (dadoARecuperar == "usuariosGrupo"){
+
+            if (joi.has("destination")) {
+
+              System.out.println(joi.getString("destination"));
+
+            }
+
+          }else if (dadoARecuperar == "grupos"){
+
+            if (joi.has("source")) {
+              
+              if(!joi.getString("source").equals("")){
+                System.out.println(joi.getString("source"));
+              }
+
+            } 
+
+          }
+
+        }
+      }
+
+    } catch ( JSONException exc ) {
+    
+      exc.printStackTrace();
+
+    }
+
   }
 
   private static void removerGrupo(Channel channel, String mensagem) throws IOException {
