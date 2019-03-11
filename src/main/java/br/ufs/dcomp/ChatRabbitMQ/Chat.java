@@ -19,7 +19,12 @@ import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.net.URLConnection;
 import java.util.HashMap;
-import br.ufs.dcomp.ChatRabbitMQ.*;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import org.json.*;
+
 
 public class Chat {
 
@@ -46,7 +51,9 @@ public class Chat {
     factory.setUri("amqp://adclapft:3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3@toad.rmq.cloudamqp.com/adclapft"); // cloudamqp
     Connection connection = factory.newConnection();
     Channel channel = connection.createChannel();
-    
+    Channel channel_1 = connection.createChannel();
+
+
     //Obtendo a primeira entrada do usuário
     System.out.println("Usuário: ");
     Scanner sc = new Scanner(System.in);
@@ -126,6 +133,14 @@ public class Chat {
           tipoMensagem = "arquivo";
           montarMensagemEnvio(mensagem,tipoMensagem);
 
+        } else if (mensagem.startsWith("!listUsers")){
+          
+          listarUsuariosGrupo(channel, mensagem);
+          
+        } else if (mensagem.startsWith("!listGroups")){
+         
+         listarGruposUsuarios();
+          
         } else {
 
             System.out.println("Comando não encontrado!");
@@ -328,6 +343,138 @@ public class Chat {
     }
 
   }
+  
+  private static void listarUsuariosGrupo(Channel channel, String mensagem) throws IOException{
+    
+    try {
+      
+            String texto[] = mensagem.split(" ");    
+            grupo = texto[1];
+            
+            String username = "adclapft";
+            String password = "3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3";
+     
+            String usernameAndPassword = username + ":" + password;
+            String authorizationHeaderName = "Authorization";
+            String authorizationHeaderValue = "Basic " + java.util.Base64.getEncoder().encodeToString( usernameAndPassword.getBytes() );
+     
+            // Perform a request
+            String restResource = "https://toad.rmq.cloudamqp.com";
+            Client client = ClientBuilder.newClient();
+            Response resposta = client.target( restResource )
+            	.path("/api/exchanges/adclapft/"+grupo+"/bindings/source") // lista todos os binds que tem "ufs" como source	
+            	.request(MediaType.APPLICATION_JSON)
+                .header( authorizationHeaderName, authorizationHeaderValue ) // The basic authentication header goes here
+                .get();     // Perform a post with the form values
+           
+            if (resposta.getStatus() == 200) {
+            
+            	String jsonData = resposta.readEntity(String.class);
+            	jsonData = "{\"bindings\": [" +
+                                  "{\"ircEvent\":"
+                                + jsonData
+                                + "}"
+                                + "]"
+                                + "}";
+                                
+            try {
+
+            JSONObject jObj = new JSONObject( jsonData );
+
+            JSONArray jArray = jObj.getJSONArray( "bindings" );
+
+            for ( int i = 0; i < jArray.length(); i++ ) {
+
+            JSONObject jo = jArray.getJSONObject( i );
+
+            JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
+
+            for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
+
+            JSONObject joi = jArrayIrcEvent.getJSONObject( j );
+
+            if ( joi.has( "destination" ) ) {
+                System.out.println( joi.getString( "destination" ) );
+            } 
+            }
+            }
+            } catch ( JSONException exc ) {
+            exc.printStackTrace();
+            }
+            	
+            	System.out.print(prompt);
+            
+            }    
+            
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    
+  }
+  
+    private static void listarGruposUsuarios() throws IOException{
+    
+    try {
+            String username = "adclapft";
+            String password = "3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3";
+     
+            String usernameAndPassword = username + ":" + password;
+            String authorizationHeaderName = "Authorization";
+            String authorizationHeaderValue = "Basic " + java.util.Base64.getEncoder().encodeToString( usernameAndPassword.getBytes() );
+     
+            // Perform a request
+            String restResource = "https://toad.rmq.cloudamqp.com";
+            Client client = ClientBuilder.newClient();
+            Response resposta = client.target( restResource )
+            	.path("/api/queues/adclapft/"+emissor+"/bindings")
+            	.request(MediaType.APPLICATION_JSON)
+                .header( authorizationHeaderName, authorizationHeaderValue ) // The basic authentication header goes here
+                .get();     // Perform a post with the form values
+           
+            if (resposta.getStatus() == 200) {
+            
+            	String jsonData = resposta.readEntity(String.class);
+            	jsonData = "{\"bindings\": [" +
+                                  "{\"ircEvent\":"
+                                + jsonData
+                                + "}"
+                                + "]"
+                                + "}";
+                                
+                                try {
+
+            JSONObject jObj = new JSONObject( jsonData );
+
+            JSONArray jArray = jObj.getJSONArray( "bindings" );
+
+            for ( int i = 0; i < jArray.length(); i++ ) {
+
+            JSONObject jo = jArray.getJSONObject( i );
+
+            JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
+
+            for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
+
+            JSONObject joi = jArrayIrcEvent.getJSONObject( j );
+
+            if ( joi.has( "source" ) ) {
+                System.out.println( joi.getString( "source" ) );
+            } 
+            }
+            }
+            } catch ( JSONException exc ) {
+            exc.printStackTrace();
+            }
+            	
+            	System.out.print(prompt);
+            
+            }    
+            
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    
+  }
 
   private static void removerGrupo(Channel channel, String mensagem) throws IOException {
 
@@ -422,13 +569,23 @@ public class Chat {
 
         nome = file.getName();
 
-        System.out.println("Arquivo enviado com sucesso!");
+        System.out.println("Enviando " +file.getName()+ " para " + receptor);
       
       } else {
 
         System.out.println("Arquivo não existe!");
 
       }
+      
+        Runnable t2 = () -> {
+        //mensagem = receptor;
+        //mudarUsuarioReceptor(channel_1, mensagem, extensoes);
+        metodo1();
+        };
+        
+        Thread thread2 = new Thread(t2);
+        
+        thread2.start();
 
     }else{
 
