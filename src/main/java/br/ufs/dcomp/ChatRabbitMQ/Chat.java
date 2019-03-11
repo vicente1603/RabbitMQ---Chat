@@ -580,7 +580,7 @@ public class Chat {
         Runnable t2 = () -> {
         //mensagem = receptor;
         //mudarUsuarioReceptor(channel_1, mensagem, extensoes);
-        metodo1();
+        //metodo1();
         };
         
         Thread thread2 = new Thread(t2);
