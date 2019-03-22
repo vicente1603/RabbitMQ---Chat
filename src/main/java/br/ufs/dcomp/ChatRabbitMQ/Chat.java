@@ -48,7 +48,8 @@ public class Chat {
 
     //Criando a conexão
     ConnectionFactory factory = new ConnectionFactory();
-    factory.setUri("amqp://adclapft:3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3@toad.rmq.cloudamqp.com/adclapft"); // cloudamqp
+    //factory.setUri("amqp://adclapft:3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3@toad.rmq.cloudamqp.com/adclapft"); // cloudamqp
+    factory.setUri("amqp://admin:admin@ec2-3-87-228-250.compute-1.amazonaws.com"); // aws 
     Connection connection = factory.newConnection();
     Channel channel = connection.createChannel();
     Channel channel_1 = connection.createChannel();
@@ -90,6 +91,8 @@ public class Chat {
         System.out.println("| !addUser      <nome-do-usuario> <nome-do-grupo>   |  Adicionar um usuário a um grupo específico  |");
         System.out.println("| !delFromGroup <nome-do-usuario> <nome-do-grupo>   |  Remover um usuário de um grupo específico   |");
         System.out.println("| !upload       <caminho-do-arquivo>                |  Fazer upload de um arquivo                  |");
+        System.out.println("| !listGroups                                       |  Lista os grupos do usuário logado           |");
+        System.out.println("| !listUsers    <nome-do-grupo>                     |  Listar os usuários do grupo específico      |");
         System.out.println("----------------------------------------------------------------------------------------------------");
         System.out.println("");
         
