@@ -351,11 +351,11 @@ public class Chat {
       String nomeServico = "listarUsuariosGrupo";
       String dadoARecuperar = "usuariosGrupo";
       
-      Response resposta = recuperarJson(mensagem,nomeServico);
+      Response resposta = recuperarJson(mensagem, nomeServico);
    
       if (resposta.getStatus() == 200) {
       
-        extrairEListarDadosJson(formatarJson(resposta),dadoARecuperar);
+        extrairEListarDadosJson(formatarJson(resposta), dadoARecuperar);
         System.out.print("\n" + prompt);
       
       }    
@@ -461,9 +461,9 @@ public class Chat {
         JSONObject jo = jArray.getJSONObject( i );
         JSONArray jArrayIrcEvent = jo.optJSONArray( "ircEvent" );
 
-        for ( int j = 0; j < jArrayIrcEvent.length(); j++ ) {
+        for (int j = 0; j < jArrayIrcEvent.length(); j++) {
 
-          JSONObject joi = jArrayIrcEvent.getJSONObject( j );
+          JSONObject joi = jArrayIrcEvent.getJSONObject(j);
 
           if (dadoARecuperar == "usuariosGrupo"){
 
@@ -476,12 +476,12 @@ public class Chat {
           }else if (dadoARecuperar == "grupos"){
 
             if (joi.has("source")) {
-              
+
               if(!joi.getString("source").equals("")){
                 System.out.println(joi.getString("source"));
               }
 
-            } 
+            }
 
           }
 
