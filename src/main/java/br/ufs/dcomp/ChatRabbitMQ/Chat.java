@@ -52,8 +52,7 @@ public class Chat {
     factory.setUri("amqp://admin:admin@ec2-3-87-228-250.compute-1.amazonaws.com"); // aws 
     Connection connection = factory.newConnection();
     Channel channel = connection.createChannel();
-    Channel channel_1 = connection.createChannel();
-
+    Channel channel_arquivo = connection.createChannel();
 
     //Obtendo a primeira entrada do usuário
     System.out.println("Usuário: ");
@@ -64,7 +63,7 @@ public class Chat {
     channel.queueDeclare(emissor, false,   false,     false,       null);
 
     //Criando a fila de arquivos do usuário emissor
-    channel.queueDeclare("@" + emissor, false,   false,     false,       null);
+    channel_arquivo.queueDeclare(emissor, false,   false,     false,       null);
     
     //Começando o prompt de mensagens
     System.out.println("");
@@ -101,40 +100,40 @@ public class Chat {
       }else if (mensagem.startsWith("@")) {
 
         //Mudando o receptor para um usuário específico
-        mudarUsuarioReceptor(channel, mensagem);
+        mudarUsuarioReceptor(channel, channel_arquivo, mensagem);
 
       } else if (mensagem.startsWith("#")) {
 
         //Mudando o receptor para um grupo específico
-        mudarGrupoReceptor(channel, mensagem);
+        mudarGrupoReceptor(channel, channel_arquivo, mensagem);
 
       } else if (mensagem.startsWith("!")) {
 
         if (mensagem.startsWith("!addGroup")) {
           
           //Criando um grupo
-          criarGrupo(channel, mensagem);
+          criarGrupo(channel, channel_arquivo, mensagem);
 
         } else if (mensagem.startsWith("!removeGroup")) {
 
           //Apagando um grupo
-          removerGrupo(channel, mensagem);
+          removerGrupo(channel, channel_arquivo, mensagem);
 
         } else if (mensagem.startsWith("!addUser")) {
 
           //Adicionando um usuário a um grupo
-          adicionarUsuarioAGrupo(channel, mensagem);
+          adicionarUsuarioAGrupo(channel, channel_arquivo, mensagem);
             
         } else if (mensagem.startsWith("!delFromGroup")) {
 
           //Removendo um usuário de um grupo
-          removerUsuarioDeGrupo(channel, mensagem);
+          removerUsuarioDeGrupo(channel, channel_arquivo, mensagem);
 
         } else if (mensagem.startsWith("!upload")) {
 
           //Fazendo um upload de arquivo
           tipoMensagem = "arquivo";
-          montarMensagemEnvio(mensagem,tipoMensagem);
+          montarMensagemEnvio(mensagem, tipoMensagem);
 
         } else if (mensagem.startsWith("!listUsers")){
           
@@ -191,12 +190,12 @@ public class Chat {
         //channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
         //channel.queueDeclare("@" + receptor, false,   false,     false,       null);
         
-        Thread thread = new Thread(new UploadArquivo(channel, mensagemEnvioAB, receptor));
+        Thread thread = new Thread(new UploadArquivo(channel_arquivo, mensagemEnvioAB, receptor));
         thread.start();
 
         if(!grupo.equals("")){
           //Envindo os arquivos do grupo
-          channel.basicPublish("@" + grupo, "", null,  mensagemEnvioAB);
+          channel_arquivo.basicPublish(grupo, "", null,  mensagemEnvioAB);
         }
 
       }
@@ -205,7 +204,7 @@ public class Chat {
 
   }
 
-  private static void mudarUsuarioReceptor(Channel channel, String mensagem) throws IOException {
+  private static void mudarUsuarioReceptor(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
 
     //Mudando o layout do prompt para "nomeUsuario>>"
     receptor = mensagem;
@@ -256,11 +255,11 @@ public class Chat {
     channel.basicConsume(emissor, true, consumer); 
 
     //Consumindo a fila de arquivos do emissor    
-    channel.basicConsume("@" + emissor, true, consumer); 
+    channel_arquivo.basicConsume(emissor, true, consumer); 
 
   }
 
-  private static void mudarGrupoReceptor(Channel channel, String mensagem) throws IOException {
+  private static void mudarGrupoReceptor(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
 
     //Mudando o layout do prompt para "#nomeGrupo>>"
     receptor = "";    
@@ -311,11 +310,11 @@ public class Chat {
     channel.basicConsume(emissor, true, consumer); 
 
     //Consumindo a fila de arquivos do emissor    
-    channel.basicConsume("@" + emissor, true, consumer); 
+    channel_arquivo.basicConsume(emissor, true, consumer); 
 
   }
 
-  private static void criarGrupo(Channel channel, String mensagem) throws IOException {
+  private static void criarGrupo(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
     
     String texto[] = mensagem.split(" ");    
     grupo = texto[1];
@@ -330,13 +329,13 @@ public class Chat {
       channel.exchangeDeclare(grupo.trim(), "fanout");
 
       //Criando o grupo de arquivos
-      channel.exchangeDeclare("@" + grupo.trim(), "fanout");
+      channel_arquivo.exchangeDeclare(grupo.trim(), "fanout");
       
       //Adicionando o emissor ao grupo
       channel.queueBind(emissor, grupo.trim(), "");
 
       //Adicionando o emissor ao grupo
-      channel.queueBind("@" + emissor, "@" + grupo.trim(), "");
+      channel_arquivo.queueBind(emissor, grupo.trim(), "");
         
       System.out.println("Grupo " + grupo + " criado com sucesso.");
       System.out.println("");
@@ -499,7 +498,7 @@ public class Chat {
 
   }
 
-  private static void removerGrupo(Channel channel, String mensagem) throws IOException {
+  private static void removerGrupo(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
 
     String texto[] = mensagem.split(" ");
     grupo = texto[1];
@@ -514,7 +513,7 @@ public class Chat {
       channel.exchangeDelete(grupo.trim());
 
       //Removendo o grupo
-      channel.exchangeDelete("@" + grupo.trim());
+      channel_arquivo.exchangeDelete(grupo.trim());
     
       System.out.println("Grupo " + grupo.trim() + " removido com sucesso.");
       System.out.println("");
@@ -525,7 +524,7 @@ public class Chat {
 
   }
 
-  private static void adicionarUsuarioAGrupo(Channel channel, String mensagem) throws IOException {
+  private static void adicionarUsuarioAGrupo(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
 
     String text[] = mensagem.split(" ");
             
@@ -536,7 +535,7 @@ public class Chat {
     channel.queueBind(receptor, grupo, "");
 
     //Adicionando o usuário ao grupo
-    channel.queueBind("@" + receptor, "@" + grupo, "");
+    channel_arquivo.queueBind(receptor, grupo, "");
     
     System.out.println(receptor + " foi adicionado ao grupo " + grupo);
 
@@ -544,7 +543,7 @@ public class Chat {
 
   }
         
-  private static void removerUsuarioDeGrupo(Channel channel, String mensagem) throws IOException {
+  private static void removerUsuarioDeGrupo(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
 
     String text[] = mensagem.split(" ");
             
@@ -555,7 +554,7 @@ public class Chat {
     channel.queueUnbind(receptor, grupo, "");
 
     //Removendo o usuário do grupo
-    channel.queueUnbind("@" + receptor, "@" + grupo, "");
+    channel_arquivo.queueUnbind(receptor, grupo, "");
     
     System.out.println(receptor + " foi removido do grupo " + grupo); 
 
@@ -650,12 +649,12 @@ public class Chat {
 
 class UploadArquivo implements Runnable {
 
-  private final Channel channel;
+  private final Channel channel_arquivo;
   private final byte[] mensagemEnvioAB;
   private final String receptor;
 
-  public UploadArquivo(Channel channel, byte[] mensagemEnvioAB, String receptor) {
-      this.channel = channel;
+  public UploadArquivo(Channel channel_arquivo, byte[] mensagemEnvioAB, String receptor) {
+      this.channel_arquivo = channel_arquivo;
       this.mensagemEnvioAB = mensagemEnvioAB;
       this.receptor = receptor;
   }
@@ -666,8 +665,8 @@ class UploadArquivo implements Runnable {
       try {
 
           //Envindo as mensagens da fila do receptor
-          channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
-          channel.queueDeclare("@" + receptor, false,   false,     false,       null);
+          channel_arquivo.basicPublish("", receptor, null,  mensagemEnvioAB);
+          channel_arquivo.queueDeclare(receptor, false,   false,     false,       null);
           
       } catch (Exception ex) {
           System.out.println("Thread was interrupted");
