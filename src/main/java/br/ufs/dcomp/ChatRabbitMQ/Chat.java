@@ -138,11 +138,13 @@ public class Chat {
 
         } else if (mensagem.startsWith("!listUsers")){
           
+          //Listando os usuários de um grupo específico
           listarUsuariosGrupo(channel, mensagem);
           
         } else if (mensagem.startsWith("!listGroups")){
-         
-         listarGruposUsuarios();
+          
+          //Listando todos os grupos criados até então
+          listarGruposUsuarios();
           
         } else {
 
@@ -182,8 +184,6 @@ public class Chat {
         System.out.print(prompt);
 
       }
-
-      //System.out.println(mensagem);
 
       if (mensagem.startsWith("!upload")) {
 
@@ -329,7 +329,7 @@ public class Chat {
       //Criando o grupo
       channel.exchangeDeclare(grupo.trim(), "fanout");
 
-      //Criando o grupo
+      //Criando o grupo de arquivos
       channel.exchangeDeclare("@" + grupo.trim(), "fanout");
       
       //Adicionando o emissor ao grupo
