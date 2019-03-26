@@ -276,6 +276,8 @@ public class Chat {
         
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
 
+        if (!emissor.equals(mensagemRecebida.getEmissor()))
+        
         if(mensagemRecebida.getConteudo().getTipo() == ""){
 
           System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + "#" + grupo + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
@@ -301,6 +303,8 @@ public class Chat {
           }
 
         }
+        
+            System.out.println(receptor + prompt);
 
       }
 
@@ -592,6 +596,8 @@ public class Chat {
         nome = file.getName();
 
         System.out.println("Enviando " +file.getName()+ " para " + receptor);
+        
+        System.out.println(prompt);
       
       } else {
 
