@@ -49,7 +49,7 @@ public class Chat {
     //Criando a conexão
     ConnectionFactory factory = new ConnectionFactory();
     //factory.setUri("amqp://adclapft:3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3@toad.rmq.cloudamqp.com/adclapft"); // cloudamqp
-    factory.setUri("amqp://admin:admin@ec2-3-87-228-250.compute-1.amazonaws.com"); // aws 
+    factory.setUri("amqp://admin:admin@ec2-3-87-228-250.compute-1.amazonaws.com/aws"); // aws 
     Connection connection = factory.newConnection();
     Channel channel = connection.createChannel();
     Channel channel_arquivo = connection.createChannel();
@@ -407,17 +407,17 @@ public class Chat {
 
       String texto[] = mensagem.split(" ");    
       grupo = texto[1];
-      caminhoServico = "/api/exchanges/adclapft/" + grupo + "/bindings/source";
+      caminhoServico = "/api/exchanges/aws/" + grupo + "/bindings/source";
 
     }else if (nomeServico == "listarGruposUsuarios"){
 
-      caminhoServico = "/api/queues/adclapft/" + emissor + "/bindings";
+      caminhoServico = "/api/queues/aws/" + emissor + "/bindings";
 
     }
 
     //Preparando os dados para a requisição
-    String username = "adclapft";
-    String password = "3xYe7a-bU4zTUjwrJ9DXVemXfkqTk-G3";
+    String username = "admin";
+    String password = "admin";
     String usernameAndPassword = username + ":" + password;
     String authorizationHeaderName = "Authorization";
     String authorizationHeaderValue = "Basic " + java.util.Base64.getEncoder().encodeToString( usernameAndPassword.getBytes() );
@@ -425,7 +425,7 @@ public class Chat {
     if(caminhoServico != ""){
 
       //Realizando a requisição
-      String restResource = "https://toad.rmq.cloudamqp.com";
+      String restResource = "http://Balancer2-4494417c2cd96b89.elb.us-east-1.amazonaws.com:80";
       Client client = ClientBuilder.newClient();
       resposta = client.target( restResource )
         .path(caminhoServico) // a requisição depende do caminho do serviço
@@ -666,7 +666,6 @@ class UploadArquivo implements Runnable {
   }
 
   @Override
-  // This function will be executed in parallel
   public void run() {
       try {
 
@@ -675,7 +674,7 @@ class UploadArquivo implements Runnable {
           channel_arquivo.queueDeclare(receptor, false,   false,     false,       null);
           
       } catch (Exception ex) {
-          System.out.println("Thread was interrupted");
+          System.out.println("Thread encerrada.");
       }
   }
 
