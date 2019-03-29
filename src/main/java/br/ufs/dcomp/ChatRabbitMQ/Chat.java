@@ -432,8 +432,15 @@ public class Chat {
       if (resposta.getStatus() == 200) {
       
         extrairEListarDadosJson(formatarJson(resposta), dadoARecuperar);
-        System.out.print("\n" + prompt);
-      
+        
+        if(grupo != ""){
+          System.out.print("#" + grupo + prompt);
+        }else if(receptor != ""){
+          System.out.print("@" + receptor + prompt);
+        }else{
+          System.out.print(prompt);
+        }
+  
       }    
             
 		} catch (Exception e) {
@@ -456,7 +463,14 @@ public class Chat {
       if (resposta.getStatus() == 200) {
       
         extrairEListarDadosJson(formatarJson(resposta),dadoARecuperar);
-        System.out.print("\n" + prompt);
+        
+        if(grupo != ""){
+          System.out.print("#" + grupo + prompt);
+        }else if(receptor != ""){
+          System.out.print("@" + receptor + prompt);
+        }else{
+          System.out.print(prompt);
+        }  
       
       }    
             
