@@ -161,7 +161,7 @@ public class Chat {
 
       }else if(!receptor.equals("")){
 
-        if(grupo != ""){
+        if(grupo != "" && receptor == ""){
           System.out.print("#" + grupo + prompt);
         }else if(receptor != ""){
           System.out.print("@" + receptor + prompt);
@@ -175,7 +175,7 @@ public class Chat {
 
       }else if(!grupo.equals("")){
 
-        if(grupo != ""){
+        if(grupo != "" && receptor == ""){
           System.out.print("#" + grupo + prompt);
         }else if(receptor != ""){
           System.out.print("@" + receptor + prompt);
@@ -199,7 +199,7 @@ public class Chat {
         System.out.println("Digite '@' e em seguida o nome do usuário para enviar uma mensagem ou digite '&' para saber os comandos disponíveis.");
         System.out.println("");
 
-        if(grupo != ""){
+        if(grupo != "" && receptor == ""){
           System.out.print("#" + grupo + prompt);
         }else if(receptor != ""){
           System.out.print("@" + receptor + prompt);
@@ -236,7 +236,7 @@ public class Chat {
   private static void mudarUsuarioReceptor(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
 
     //Mudando o layout do prompt para "nomeUsuario>>"
-    grupo = "";
+    //grupo = "";
     receptor = mensagem;
     receptor = receptor.replace("@", "");
     System.out.println("As próximas mensagens serão enviadas para " + receptor + ".");
@@ -277,7 +277,7 @@ public class Chat {
 
           }
 
-          if(grupo != ""){
+          if(grupo != "" && receptor == ""){
             System.out.print("#" + grupo + prompt);
           }else if(receptor != ""){
             System.out.print("@" + receptor + prompt);
@@ -297,7 +297,7 @@ public class Chat {
     //Consumindo a fila de arquivos do emissor    
     channel_arquivo.basicConsume(emissor, true, consumer); 
 
-    if(grupo != ""){
+    if(grupo != "" && receptor == ""){
       System.out.print("#" + grupo + prompt);
     }else if(receptor != ""){
       System.out.print("@" + receptor + prompt);
@@ -352,7 +352,7 @@ public class Chat {
 
           }
 
-          if(grupo != ""){
+          if(grupo != "" && receptor == ""){
             System.out.print("#" + grupo + prompt);
           }else if(receptor != ""){
             System.out.print("@" + receptor + prompt);
@@ -372,7 +372,7 @@ public class Chat {
     //Consumindo a fila de arquivos do emissor    
     channel_arquivo.basicConsume(emissor, true, consumer); 
   
-    if(grupo != ""){
+    if(grupo != "" && receptor == ""){
       System.out.print("#" + grupo + prompt);
     }else if(receptor != ""){
       System.out.print("@" + receptor + prompt);
@@ -408,7 +408,7 @@ public class Chat {
       System.out.println("Grupo " + grupo + " criado com sucesso.");
       System.out.println("");
 
-      if(grupo != ""){
+      if(grupo != "" && receptor == ""){
         System.out.print("#" + grupo + prompt);
       }else if(receptor != ""){
         System.out.print("@" + receptor + prompt);
@@ -433,7 +433,7 @@ public class Chat {
       
         extrairEListarDadosJson(formatarJson(resposta), dadoARecuperar);
         
-        if(grupo != ""){
+        if(grupo != "" && receptor == ""){
           System.out.print("#" + grupo + prompt);
         }else if(receptor != ""){
           System.out.print("@" + receptor + prompt);
@@ -464,13 +464,13 @@ public class Chat {
       
         extrairEListarDadosJson(formatarJson(resposta),dadoARecuperar);
         
-        if(grupo != ""){
+        if(grupo != "" && receptor == ""){
           System.out.print("#" + grupo + prompt);
         }else if(receptor != ""){
           System.out.print("@" + receptor + prompt);
         }else{
           System.out.print(prompt);
-        }  
+        }
       
       }    
             
@@ -606,7 +606,7 @@ public class Chat {
       System.out.println("Grupo " + grupo.trim() + " removido com sucesso.");
       System.out.println("");
 
-      if(grupo != ""){
+      if(grupo != "" && receptor == ""){
         System.out.print("#" + grupo + prompt);
       }else if(receptor != ""){
         System.out.print("@" + receptor + prompt);
@@ -634,7 +634,7 @@ public class Chat {
     System.out.println(receptor + " foi adicionado ao grupo " + grupo);
     System.out.println("");
 
-    if(grupo != ""){
+    if(grupo != "" && receptor == ""){
       System.out.print("#" + grupo + prompt);
     }else if(receptor != ""){
       System.out.print("@" + receptor + prompt);
@@ -660,7 +660,7 @@ public class Chat {
     System.out.println(receptor + " foi removido do grupo " + grupo); 
     System.out.println("");
 
-    if(grupo != ""){
+    if(grupo != "" && receptor == ""){
       System.out.print("#" + grupo + prompt);
     }else if(receptor != ""){
       System.out.print("@" + receptor + prompt);
@@ -707,7 +707,7 @@ public class Chat {
           System.out.println("");
         }
         
-        if(grupo != ""){
+        if(grupo != "" && receptor == ""){
           System.out.print("#" + grupo + prompt);
         }else if(receptor != ""){
           System.out.print("@" + receptor + prompt);
