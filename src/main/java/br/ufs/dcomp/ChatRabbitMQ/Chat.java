@@ -251,11 +251,15 @@ public class Chat {
 
     };
 
-    //Consumindo a fila do emissor    
-    channel.basicConsume(emissor, true, consumer); 
+    if(emissor != receptor){
 
-    //Consumindo a fila de arquivos do emissor    
-    channel_arquivo.basicConsume(emissor, true, consumer); 
+      //Consumindo a fila do emissor    
+      channel.basicConsume(emissor, true, consumer); 
+
+      //Consumindo a fila de arquivos do emissor    
+      channel_arquivo.basicConsume(emissor, true, consumer); 
+    
+    }
 
   }
 
@@ -306,11 +310,15 @@ public class Chat {
 
     };
 
-    //Consumindo a fila do emissor    
-    channel.basicConsume(emissor, true, consumer); 
+    if(emissor != receptor){
 
-    //Consumindo a fila de arquivos do emissor    
-    channel_arquivo.basicConsume(emissor, true, consumer); 
+      //Consumindo a fila do emissor    
+      channel.basicConsume(emissor, true, consumer); 
+
+      //Consumindo a fila de arquivos do emissor    
+      channel_arquivo.basicConsume(emissor, true, consumer); 
+    
+    }
 
   }
 
@@ -591,7 +599,7 @@ public class Chat {
 
         nome = file.getName();
 
-        System.out.println("Enviando " +file.getName()+ " para " + receptor);
+        System.out.println(receptor + prompt);
       
       } else {
 
@@ -667,6 +675,8 @@ class UploadArquivo implements Runnable {
           //Envindo as mensagens da fila do receptor
           channel_arquivo.basicPublish("", receptor, null,  mensagemEnvioAB);
           channel_arquivo.queueDeclare(receptor, false,   false,     false,       null);
+
+          System.out.println("Arquivo foi enviado para @"+ receptor);
           
       } catch (Exception ex) {
           System.out.println("Thread was interrupted");
