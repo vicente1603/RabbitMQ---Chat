@@ -490,7 +490,7 @@ public class Chat {
     if(nomeServico == "listarUsuariosGrupo"){
 
       String texto[] = mensagem.split(" ");    
-      grupoMensagem = texto[1];
+      String grupoMensagem = texto[1];
       caminhoServico = "/api/exchanges/aws/" + grupoMensagem + "/bindings/source";
 
     }else if (nomeServico == "listarGruposUsuarios"){
