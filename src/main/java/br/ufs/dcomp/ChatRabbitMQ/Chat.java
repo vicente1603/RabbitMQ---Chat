@@ -55,7 +55,7 @@ public class Chat {
     Channel channel_arquivo = connection.createChannel();
 
     //Obtendo a primeira entrada do usuário
-    System.out.println("Usuário: ");
+    System.out.println("User: ");
     Scanner sc = new Scanner(System.in);
     emissor = sc.nextLine();
 
@@ -95,7 +95,13 @@ public class Chat {
         System.out.println("----------------------------------------------------------------------------------------------------");
         System.out.println("");
         
-        System.out.print(receptor + prompt);
+        if(grupo != ""){
+          System.out.print("#" + grupo + prompt);
+        }else if(receptor != ""){
+          System.out.print("@" + receptor + prompt);
+        }else{
+          System.out.print(prompt);
+        }
 
       }else if (mensagem.startsWith("@")) {
 
@@ -155,7 +161,13 @@ public class Chat {
 
       }else if(!receptor.equals("")){
 
-        System.out.print(receptor + prompt); 
+        if(grupo != ""){
+          System.out.print("#" + grupo + prompt);
+        }else if(receptor != ""){
+          System.out.print("@" + receptor + prompt);
+        }else{
+          System.out.print(prompt);
+        }
         
         //Enviando as mensagens na fila do receptor
         channel.basicPublish("",       receptor, null,  mensagemEnvioAB);
@@ -163,7 +175,13 @@ public class Chat {
 
       }else if(!grupo.equals("")){
 
-        System.out.print("#" + grupo + prompt);
+        if(grupo != ""){
+          System.out.print("#" + grupo + prompt);
+        }else if(receptor != ""){
+          System.out.print("@" + receptor + prompt);
+        }else{
+          System.out.print(prompt);
+        }
           
         try{
           
@@ -180,7 +198,14 @@ public class Chat {
 
         System.out.println("Digite '@' e em seguida o nome do usuário para enviar uma mensagem ou digite '&' para saber os comandos disponíveis.");
         System.out.println("");
-        System.out.print(prompt);
+
+        if(grupo != ""){
+          System.out.print("#" + grupo + prompt);
+        }else if(receptor != ""){
+          System.out.print("@" + receptor + prompt);
+        }else{
+          System.out.print(prompt);
+        }
 
       }
 
@@ -190,12 +215,16 @@ public class Chat {
         //channel.basicPublish("",       "@" + receptor, null,  mensagemEnvioAB);
         //channel.queueDeclare("@" + receptor, false,   false,     false,       null);
         
-        Thread thread = new Thread(new UploadArquivo(channel_arquivo, mensagemEnvioAB, receptor));
-        thread.start();
-
         if(!grupo.equals("")){
-          //Envindo os arquivos do grupo
-          channel_arquivo.basicPublish(grupo, "", null,  mensagemEnvioAB);
+
+          Thread thread2 = new Thread(new UploadArquivoGrupo(channel_arquivo, mensagemEnvioAB, grupo));
+          thread2.start();
+
+        }else if(!receptor.equals("")){
+
+          Thread thread = new Thread(new UploadArquivoUsuarioUnico(channel_arquivo, mensagemEnvioAB, receptor));
+          thread.start();
+
         }
 
       }
@@ -211,7 +240,6 @@ public class Chat {
     receptor = receptor.replace("@", "");
     System.out.println("As próximas mensagens serão enviadas para " + receptor + ".");
     System.out.println("");
-    System.out.print(receptor + prompt);
 
     Consumer consumer = new DefaultConsumer(channel) {
           
@@ -219,34 +247,45 @@ public class Chat {
       
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
 
-        if(mensagemRecebida.getConteudo().getTipo() == ""){
+        if (!emissor.equals(mensagemRecebida.getEmissor())){
 
-          System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+          if(mensagemRecebida.getConteudo().getTipo() == ""){
 
-        }else{
+            System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
 
-          try {
+          }else{
 
-            ByteString mensagemRecebidaBS = mensagemRecebida.getConteudo().getCorpo();
-            byte[] mensagemRecebidaAB = mensagemRecebidaBS.toByteArray();
+            try {
 
-            String fileDest = mensagemRecebida.getConteudo().getNome(); 
+              ByteString mensagemRecebidaBS = mensagemRecebida.getConteudo().getCorpo();
+              byte[] mensagemRecebidaAB = mensagemRecebidaBS.toByteArray();
 
-            Path path = Paths.get(fileDest);
-            Files.write(path, mensagemRecebidaAB);
+              String fileDest = mensagemRecebida.getConteudo().getNome(); 
 
-            System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
+              Path path = Paths.get(fileDest);
+              Files.write(path, mensagemRecebidaAB);
 
-          } catch (IOException e) {
+              System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") Arquivo " + mensagemRecebida.getConteudo().getNome() + " recebido de @" + mensagemRecebida.getEmissor());
 
-            e.printStackTrace();
 
+            } catch (IOException e) {
+
+              e.printStackTrace();
+
+            }
+
+          }
+
+          if(grupo != ""){
+            System.out.print("#" + grupo + prompt);
+          }else if(receptor != ""){
+            System.out.print("@" + receptor + prompt);
+          }else{
+            System.out.print(prompt);
           }
 
         }
 
-        System.out.println(receptor + prompt);
-        
       }
 
     };
@@ -258,6 +297,14 @@ public class Chat {
 
       //Consumindo a fila de arquivos do emissor    
       channel_arquivo.basicConsume(emissor, true, consumer); 
+
+      if(grupo != ""){
+        System.out.print("#" + grupo + prompt);
+      }else if(receptor != ""){
+        System.out.print("@" + receptor + prompt);
+      }else{
+        System.out.print(prompt);
+      }
     
     }
 
@@ -272,7 +319,6 @@ public class Chat {
 
     System.out.println("As próximas mensagens serão enviadas para o grupo " + grupo + ".");
     System.out.println("");
-    System.out.print("#" + grupo + prompt);
     
     Consumer consumer = new DefaultConsumer(channel) {
     
@@ -280,35 +326,44 @@ public class Chat {
         
         MensagemProto.Mensagem mensagemRecebida = MensagemProto.Mensagem.parseFrom(body);
 
-        if (!emissor.equals(mensagemRecebida.getEmissor()))
+        if (!emissor.equals(mensagemRecebida.getEmissor())){
         
-        if(mensagemRecebida.getConteudo().getTipo() == ""){
+          if(mensagemRecebida.getConteudo().getTipo() == ""){
 
-          System.out.println("("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + "#" + grupo + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
+            System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") " + mensagemRecebida.getEmissor() + "#" + grupo + " diz: " + mensagemRecebida.getConteudo().getCorpo().toString("UTF-8"));
 
-        }else{
+          }else{
 
-          try {
+            try {
 
-            ByteString mensagemRecebidaBS = mensagemRecebida.getConteudo().getCorpo();
-            byte[] mensagemRecebidaAB = mensagemRecebidaBS.toByteArray();
+              ByteString mensagemRecebidaBS = mensagemRecebida.getConteudo().getCorpo();
+              byte[] mensagemRecebidaAB = mensagemRecebidaBS.toByteArray();
 
-            String fileDest = mensagemRecebida.getConteudo().getNome(); 
+              String fileDest = mensagemRecebida.getConteudo().getNome(); 
 
-            Path path = Paths.get(fileDest);
-            Files.write(path, mensagemRecebidaAB);
+              Path path = Paths.get(fileDest);
+              Files.write(path, mensagemRecebidaAB);
 
-            System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
+              //System.out.println("O arquivo " + mensagemRecebida.getConteudo().getNome() + " foi baixado no caminho " + fileDest);
+              System.out.println("\n("+ mensagemRecebida.getData() + " às "+ mensagemRecebida.getHora() + ") Arquivo " + mensagemRecebida.getConteudo().getNome() + " recebido de @" + mensagemRecebida.getEmissor() + "#" + grupo);
 
-          } catch (IOException e) {
+            } catch (IOException e) {
 
-            e.printStackTrace();
+              e.printStackTrace();
+
+            }
 
           }
 
+          if(grupo != ""){
+            System.out.print("#" + grupo + prompt);
+          }else if(receptor != ""){
+            System.out.print("@" + receptor + prompt);
+          }else{
+            System.out.print(prompt);
+          }
+
         }
-        
-            System.out.println(receptor + prompt);
 
       }
 
@@ -321,6 +376,14 @@ public class Chat {
 
       //Consumindo a fila de arquivos do emissor    
       channel_arquivo.basicConsume(emissor, true, consumer); 
+    
+      if(grupo != ""){
+        System.out.print("#" + grupo + prompt);
+      }else if(receptor != ""){
+        System.out.print("@" + receptor + prompt);
+      }else{
+        System.out.print(prompt);
+      }
     
     }
 
@@ -352,7 +415,13 @@ public class Chat {
       System.out.println("Grupo " + grupo + " criado com sucesso.");
       System.out.println("");
 
-      System.out.print(receptor + prompt);
+      if(grupo != ""){
+        System.out.print("#" + grupo + prompt);
+      }else if(receptor != ""){
+        System.out.print("@" + receptor + prompt);
+      }else{
+        System.out.print(prompt);
+      }
 
     }
 
@@ -530,7 +599,13 @@ public class Chat {
       System.out.println("Grupo " + grupo.trim() + " removido com sucesso.");
       System.out.println("");
 
-      System.out.print(receptor + prompt);
+      if(grupo != ""){
+        System.out.print("#" + grupo + prompt);
+      }else if(receptor != ""){
+        System.out.print("@" + receptor + prompt);
+      }else{
+        System.out.print(prompt);
+      }
 
     }
 
@@ -550,8 +625,15 @@ public class Chat {
     channel_arquivo.queueBind(receptor, grupo, "");
     
     System.out.println(receptor + " foi adicionado ao grupo " + grupo);
+    System.out.println("");
 
-    System.out.print(prompt);
+    if(grupo != ""){
+      System.out.print("#" + grupo + prompt);
+    }else if(receptor != ""){
+      System.out.print("@" + receptor + prompt);
+    }else{
+      System.out.print(prompt);
+    }
 
   }
         
@@ -569,8 +651,15 @@ public class Chat {
     channel_arquivo.queueUnbind(receptor, grupo, "");
     
     System.out.println(receptor + " foi removido do grupo " + grupo); 
+    System.out.println("");
 
-    System.out.print(prompt);
+    if(grupo != ""){
+      System.out.print("#" + grupo + prompt);
+    }else if(receptor != ""){
+      System.out.print("@" + receptor + prompt);
+    }else{
+      System.out.print(prompt);
+    }
 
   }
 
@@ -603,29 +692,27 @@ public class Chat {
 
         nome = file.getName();
 
-<<<<<<< HEAD
-        System.out.println(receptor + prompt);
-=======
-        System.out.println("Enviando " +file.getName()+ " para " + receptor);
+        if(grupo != ""){
+          System.out.println("Enviando " +file.getName()+ " para o grupo " + grupo);
+          System.out.println("");
+        }else if(receptor != ""){
+          System.out.println("Enviando " +file.getName()+ " para o usuário " + receptor);
+          System.out.println("");
+        }
         
-        System.out.println(prompt);
->>>>>>> e15e029f49b1fba8dd9343cae90c39e01f20c36c
+        if(grupo != ""){
+          System.out.print("#" + grupo + prompt);
+        }else if(receptor != ""){
+          System.out.print("@" + receptor + prompt);
+        }else{
+          System.out.print(prompt);
+        }
       
       } else {
 
         System.out.println("Arquivo não existe!");
 
       }
-      
-        Runnable t2 = () -> {
-        //mensagem = receptor;
-        //mudarUsuarioReceptor(channel_1, mensagem, extensoes);
-        //metodo1();
-        };
-        
-        Thread thread2 = new Thread(t2);
-        
-        thread2.start();
 
     }else{
 
@@ -665,13 +752,14 @@ public class Chat {
 
 }
 
-class UploadArquivo implements Runnable {
+class UploadArquivoUsuarioUnico implements Runnable {
 
   private final Channel channel_arquivo;
   private final byte[] mensagemEnvioAB;
   private final String receptor;
+  private final String prompt = ">>";
 
-  public UploadArquivo(Channel channel_arquivo, byte[] mensagemEnvioAB, String receptor) {
+  public UploadArquivoUsuarioUnico(Channel channel_arquivo, byte[] mensagemEnvioAB, String receptor) {
       this.channel_arquivo = channel_arquivo;
       this.mensagemEnvioAB = mensagemEnvioAB;
       this.receptor = receptor;
@@ -686,6 +774,38 @@ class UploadArquivo implements Runnable {
           channel_arquivo.queueDeclare(receptor, false,   false,     false,       null);
 
           System.out.println("Arquivo foi enviado para @"+ receptor);
+          System.out.print("@" + receptor + prompt);
+          
+      } catch (Exception ex) {
+          System.out.println("Thread encerrada.");
+      }
+  }
+
+}
+
+class UploadArquivoGrupo implements Runnable {
+
+  private final Channel channel_arquivo;
+  private final byte[] mensagemEnvioAB;
+  private final String grupo;
+  private final String prompt = ">>";
+
+  public UploadArquivoGrupo(Channel channel_arquivo, byte[] mensagemEnvioAB, String grupo) {
+      this.channel_arquivo = channel_arquivo;
+      this.mensagemEnvioAB = mensagemEnvioAB;
+      this.grupo = grupo;
+  }
+
+  @Override
+  public void run() {
+      try {
+
+          //Envindo os arquivos do grupo
+          channel_arquivo.basicPublish(grupo, "", null,  mensagemEnvioAB);
+
+          System.out.println("Arquivo foi enviado para #"+ grupo);
+          System.out.print("#" + grupo + prompt);
+          
           
       } catch (Exception ex) {
           System.out.println("Thread encerrada.");
