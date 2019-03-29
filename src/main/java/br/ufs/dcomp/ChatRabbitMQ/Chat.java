@@ -236,6 +236,7 @@ public class Chat {
   private static void mudarUsuarioReceptor(Channel channel, Channel channel_arquivo, String mensagem) throws IOException {
 
     //Mudando o layout do prompt para "nomeUsuario>>"
+    grupo = "";
     receptor = mensagem;
     receptor = receptor.replace("@", "");
     System.out.println("As próximas mensagens serão enviadas para " + receptor + ".");
@@ -290,22 +291,18 @@ public class Chat {
 
     };
 
-    if(emissor != receptor){
+    //Consumindo a fila do emissor    
+    channel.basicConsume(emissor, true, consumer); 
 
-      //Consumindo a fila do emissor    
-      channel.basicConsume(emissor, true, consumer); 
+    //Consumindo a fila de arquivos do emissor    
+    channel_arquivo.basicConsume(emissor, true, consumer); 
 
-      //Consumindo a fila de arquivos do emissor    
-      channel_arquivo.basicConsume(emissor, true, consumer); 
-
-      if(grupo != ""){
-        System.out.print("#" + grupo + prompt);
-      }else if(receptor != ""){
-        System.out.print("@" + receptor + prompt);
-      }else{
-        System.out.print(prompt);
-      }
-    
+    if(grupo != ""){
+      System.out.print("#" + grupo + prompt);
+    }else if(receptor != ""){
+      System.out.print("@" + receptor + prompt);
+    }else{
+      System.out.print(prompt);
     }
 
   }
@@ -369,22 +366,18 @@ public class Chat {
 
     };
 
-    if(emissor != receptor){
+    //Consumindo a fila do emissor    
+    channel.basicConsume(emissor, true, consumer); 
 
-      //Consumindo a fila do emissor    
-      channel.basicConsume(emissor, true, consumer); 
-
-      //Consumindo a fila de arquivos do emissor    
-      channel_arquivo.basicConsume(emissor, true, consumer); 
-    
-      if(grupo != ""){
-        System.out.print("#" + grupo + prompt);
-      }else if(receptor != ""){
-        System.out.print("@" + receptor + prompt);
-      }else{
-        System.out.print(prompt);
-      }
-    
+    //Consumindo a fila de arquivos do emissor    
+    channel_arquivo.basicConsume(emissor, true, consumer); 
+  
+    if(grupo != ""){
+      System.out.print("#" + grupo + prompt);
+    }else if(receptor != ""){
+      System.out.print("@" + receptor + prompt);
+    }else{
+      System.out.print(prompt);
     }
 
   }
